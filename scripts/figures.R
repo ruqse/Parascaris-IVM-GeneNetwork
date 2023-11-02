@@ -23,9 +23,9 @@ custom_bg <- rownames(all_resDFnoNA)
 load("data/Results_DEGs_list.rda")
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#    Fig.1 to Fig.3 - DEGs GSEA           #
+#    Fig.1 to Fig.3 - DEGs ORA            #
 #                                         #
-#    Table S1 to Table S3 - DEGs GSEA     #
+#    Table S1 to Table S3 - DEGs ORA      #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
