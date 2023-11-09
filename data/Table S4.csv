@@ -1,6 +1,0 @@
-source,term_id,driver_term,term_name,term_size,effective_domain_size,p_value,intersection_size,intersection
-GO:CC,GO:0033176,TRUE,proton-transporting V-type ATPase complex,15,11809,0.006714655921291926,4,"PgR015_g082,PgR022X_g085,PgR062_g015,PgR113_g033"
-GO:CC,GO:0000221,TRUE,"vacuolar proton-transporting V-type ATPase, V1 domain",2,11809,0.019616018530177623,2,"PgR015_g082,PgR022X_g085"
-GO:MF,GO:0042625,FALSE,ATPase-coupled ion transmembrane transporter activity,19,11809,0.046032164412039965,4,"PgR015_g082,PgR022X_g085,PgR062_g015,PgR113_g033"
-GO:MF,GO:0044769,TRUE,"ATPase activity, coupled to transmembrane movement of ions, rotational mechanism",19,11809,0.046032164412039965,4,"PgR015_g082,PgR022X_g085,PgR062_g015,PgR113_g033"
-GO:MF,GO:0046961,FALSE,"proton-transporting ATPase activity, rotational mechanism",19,11809,0.046032164412039965,4,"PgR015_g082,PgR022X_g085,PgR062_g015,PgR113_g033"

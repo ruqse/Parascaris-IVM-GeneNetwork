@@ -21,7 +21,7 @@ source("scripts/functions.R")
 
 # Loading data
 load('data/dds.rda')
-load('data/Results_DEGs_list.rda') # list of DEGs (contrats) dataframes
+load('data/Results_DEGs_list.rda') # list of DEGs (contrasts) dataframes
 load('data/ListOfModules.rda')
 load('data/NetworkGenes.rda')
 
@@ -70,7 +70,7 @@ results_df <- results_df %>%
   dplyr::mutate(percent_overlap_TotalDEGs = (overlap/total_DEGs)*100,
                 percent_overlap_ModuleGenes = (overlap/module_Genes)*100)
 
-# write.csv(results_df,"data/Table S5.csv")
+write.csv(results_df,"data/S5 Table.csv")
 
 # Reshape the data for plotting
 long_df <- reshape2::melt(results_df, 
@@ -123,7 +123,7 @@ Overlap_Plot <- ggplot2::ggplot(long_df, ggplot2::aes(x = module, y = Count + 0.
                           legend.text = ggplot2::element_text(size = 10))
 
 # Save the plot
-ggplot2::ggsave('figures/Fig.S1.png', Overlap_Plot, width=12, height=7, dpi=600)
+ggplot2::ggsave('figures/S1_Fig.tiff', Overlap_Plot, width=7, height=4, dpi=600)
 
 
 
@@ -144,22 +144,22 @@ Sign_module_vector <- sort(significant_modules$module)
 
 # Dictionary to match module names to figure names
 fig_name_dict <- list(
-  module_01 = "Fig.S2",
-  module_02 = "Fig.S3",
-  module_04 = "Fig.S4",
-  module_05 = "Fig.S5",
-  module_08 = "Fig.S6",
-  module_10 = "Fig.S7"
+  module_01 = "S2_Fig",
+  module_02 = "S3_Fig",
+  module_04 = "S4_Fig",
+  module_05 = "S5_Fig",
+  module_08 = "S6_Fig",
+  module_10 = "S7_Fig"
 )
 
 # Dictionary to match module names to table names
 table_name_dict <- list(
-  module_01 = "Table S6",
-  module_02 = "Table S7",
-  module_04 = "Table S8",
-  module_05 = "Table S9",
-  module_08 = "Table S10",
-  module_10 = "Table S11"
+  module_01 = "S6 Table",
+  module_02 = "S7 Table",
+  module_04 = "S8 Table",
+  module_05 = "S9 Table",
+  module_08 = "S10 Table",
+  module_10 = "S11 Table"
 )
 
 
@@ -177,9 +177,9 @@ for (module_name in Sign_module_vector) {
   current_module <- ListOfModules[[module_name]]
   
   # Create a list of row names of the current module
-  current_module <- data.table::fread("data/PgR160_g006NN.txt")
-  rownames(current_module) <- current_module$Gene
-  current_query <- list(rownames(current_module))
+
+  current_query <- current_module$Gene
+  # current_query <- rownames(current_module)
   
   # Run gprofiler2::gost with the current query
   current_gostres <- gprofiler2::gost(
@@ -198,7 +198,7 @@ for (module_name in Sign_module_vector) {
     numeric_ns = "",
     highlight = TRUE,
     sources = c("GO:BP", "GO:MF", "GO:CC"),
-    as_short_link = T
+    as_short_link = F
   )
   
   
@@ -233,28 +233,34 @@ for (module_name in Sign_module_vector) {
   
   # Create the plot
   ORA_plot <- ggplot2::ggplot(current_PlotDATA, ggplot2::aes(x = -log10(p_value), y = Term, group = source)) +
-    ggplot2::geom_point(ggplot2::aes(group = source, color=source), size=3) +
-    ggplot2::geom_text(ggplot2::aes(label = DEG_count), size = 4, vjust = -1) +
+    ggplot2::geom_point(ggplot2::aes(group = source, color=source), size=2) +
+    ggplot2::geom_text(ggplot2::aes(label = DEG_count), size = 2, vjust = -1) +
     ggplot2::scale_y_discrete(limits = rev(current_PlotDATA$Term)) +
     ggplot2::scale_color_manual(values = c("Cellular Component" = "#00BA38",
                                   "Biological Process" = "#F8766D",
                                   "Molecular Function" = "#619CFF"),
                        name = "Source") +
     ggplot2::scale_size_continuous(name = expression(log[10]("DEG count"))) +
-    ggplot2::labs(x = expression(-log[10](italic(p))), y = "Term") +
+    ggplot2::labs(x = expression(bold(-log[10](italic(p)))), y = "Term") +
     ggplot2::theme_bw() +
     ggplot2::theme(
-      axis.title = ggplot2::element_text(size = 16), # increase axis title size
-      axis.text = ggplot2::element_text(size = 13),  # increase axis text size
-      legend.title = ggplot2::element_text(size = 16), # increase legend title size
-      legend.text = ggplot2::element_text(size = 13), # increase legend text size
-      panel.grid.major.x = ggplot2::element_line(color = "transparent"),
-      panel.grid.minor.x = ggplot2::element_line(color = "transparent")
+      axis.title.x = element_text(size = 12),
+      axis.text.x = element_text(size = 10),
+      axis.title.y = element_text(size = 12, angle=90, face = "bold"),
+      axis.text.y = element_text(size = 10),
+      legend.position = "bottom",
+      legend.justification = c(1, 0), # Anchor point is bottom left
+      legend.title = ggplot2::element_blank(),
+      legend.text = element_text(size = 10),
+      legend.box = "horizontal", # Ensure the legend keys are arranged horizontally
+      panel.grid.major.x = element_line(color = "transparent"),
+      panel.grid.minor.x = element_line(color = "transparent"),
+      plot.margin = margin(t=10, r=10, b=10, l=10)
 
     )
     
   # Save the plot to a file
-  ggplot2::ggsave(ORA_plot, file=paste0("figures/", fig_name, ".png"), width=12.87, height=7.48)
+  ggplot2::ggsave(ORA_plot, file=paste0("figures/", fig_name, ".tiff"), width=7, height=3, dpi = 600)
 }
 
 
@@ -275,7 +281,7 @@ Fig.S8  <- pheatmap::pheatmap(cor_mat.spearman$r,
                             fontsize_number = 15,
                             border_color = "white",
                             cutree_rows = 2, cutree_cols = 2, show_rownames=T, show_colnames=T)
-png(filename="figures/Fig.S8.png", width=4000, height=3500, res=600)
+tiff(filename="figures/S8_Fig.tiff", width=4000, height=3500, res=600)
 Fig.S8 <- grid::grid.draw(Fig.S8)
 dev.off()
 

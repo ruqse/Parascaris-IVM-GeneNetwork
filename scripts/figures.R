@@ -15,120 +15,368 @@ library(gprofiler2)
 source("scripts/functions.R")
 
 
-# Load the dataframe of all genes with non-NA p-values
-load("data/all_resDFnoNA.rda")
-custom_bg <- rownames(all_resDFnoNA)
+# Load the dataframe of all genes with non-zero counts
+
+df <- data.table::fread("data/Allgenes.csv") %>% 
+              dplyr::select(Gene.stable.ID)
+
+rownames(df) <- df$Gene.stable.ID
+custom_bg <- rownames(df)
 
 # Load the list object containing DEGs results for different contrasts
 load("data/Results_DEGs_list.rda")
 
+
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#    Fig.1 to Fig.3 - DEGs ORA            #
+#           Fig.1  - DEGs ORA             #
 #                                         #
-#    Table S1 to Table S3 - DEGs ORA      #
+#         Table S2A & S2B - DEGs ORA      #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# intestinal upregulated genes
+
+intestine11.down <- Results_DEGs_list$intestine.IVM11vsCtrl %>% 
+  dplyr::filter(log2FoldChange<0) %>% 
+  rownames(.)
+
+
+
+intestine11.down_ORA_res <- gprofiler2::gost(
+  intestine11.down, 
+  organism = "paunivprjna386823",
+  ordered_query = FALSE,
+  multi_query = FALSE,
+  significant = TRUE,
+  exclude_iea = FALSE,
+  measure_underrepresentation = FALSE,
+  evcodes = TRUE,
+  user_threshold = 0.05,
+  correction_method = "g_SCS",
+  domain_scope = "custom",
+  custom_bg = custom_bg,
+  numeric_ns = "",
+  highlight = TRUE,
+  sources = c("GO:BP", "GO:MF", "GO:CC"),
+  as_short_link = F
+)
+intestine11.down_df <- intestine11.down_ORA_res$result %>%
+  dplyr::select(source,	term_id,	highlighted, term_name,	term_size,	effective_domain_size,	p_value,	intersection_size,	intersection) %>% 
+  dplyr::rename(driver_term = highlighted)
+
+readr::write_csv(intestine11.down_df, file="data/S2A Table.csv")
+
+
+# Prepare data specifically for plotting
+intestine11.down_PlotDATA <- intestine11.down_df %>%
+  dplyr::select(source, term_name, p_value, intersection_size, driver_term) %>%
+  dplyr::rename(Term = term_name, DEG_count = intersection_size) %>% 
+  dplyr::filter(driver_term==TRUE)
+
+intestine11.down_PlotDATA$source <- factor(intestine11.down_PlotDATA$source, levels = unique(intestine11.down_PlotDATA$source))
+
+intestine11.down_PlotDATA$source <- recode(
+  intestine11.down_PlotDATA$source,
+  `GO:CC` = "Cellular Component",
+  `GO:BP` = "Biological Process",
+  `GO:MF` = "Molecular Function"
+)
+
+# Create and Save Plot
+intestine11.down_ORA_plot <- ggplot2::ggplot(intestine11.down_PlotDATA, ggplot2::aes(x = round(-log10(p_value),1), y = Term, group = source)) +
+  ggplot2::geom_point(ggplot2::aes(group = source, color=source), size=2) +
+  ggplot2::geom_text(ggplot2::aes(label = DEG_count), size = 2, vjust = -1) +
+  ggplot2::scale_y_discrete(limits = rev(intestine11.down_PlotDATA$Term)) +
+  ggplot2::scale_color_manual(values = c("Cellular Component" = "#00BA38",
+                                         "Biological Process" = "#F8766D",
+                                         "Molecular Function" = "#619CFF"),
+                              name = "Source") +
+  ggplot2::scale_size_continuous(name = expression(log[10]("DEG count"))) +
+  ggplot2::labs(x = expression(bold(-log[10](italic(p)))), y = "Term") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    axis.title.x = element_text(size = 12),
+    axis.text.x = element_text(size = 10),
+    axis.title.y = element_text(size = 12, angle=90, face = "bold"),
+    axis.text.y = element_text(size = 10)
+    
+  )
+
+#  intestinal upregulated genes
+
+intestine11.up <- Results_DEGs_list$intestine.IVM11vsCtrl %>% 
+  dplyr::filter(log2FoldChange>0) %>% 
+  rownames(.)
+
+
+intestine11.up_ORA_res <- gprofiler2::gost(
+  intestine11.up, 
+  organism = "paunivprjna386823",
+  ordered_query = FALSE,
+  multi_query = FALSE,
+  significant = TRUE,
+  exclude_iea = FALSE,
+  measure_underrepresentation = FALSE,
+  evcodes = TRUE,
+  user_threshold = 0.05,
+  correction_method = "g_SCS",
+  domain_scope = "custom",
+  custom_bg = custom_bg,
+  numeric_ns = "",
+  highlight = TRUE,
+  sources = c("GO:BP", "GO:MF", "GO:CC"),
+  as_short_link = F
+)
+intestine11.up_df <- intestine11.up_ORA_res$result %>%
+  dplyr::select(source,	term_id,	highlighted, term_name,	term_size,	effective_domain_size,	p_value,	intersection_size,	intersection) %>% 
+  dplyr::rename(driver_term = highlighted)
+
+readr::write_csv(intestine11.up_df, file="data/S2B Table.csv")
+
+
+# Prepare data specifically for plotting
+intestine11.up_PlotDATA <- intestine11.up_df %>%
+  dplyr::select(source, term_name, p_value, intersection_size, driver_term) %>%
+  dplyr::rename(Term = term_name, DEG_count = intersection_size) %>% 
+  dplyr::filter(driver_term==TRUE)
+
+intestine11.up_PlotDATA$source <- factor(intestine11.up_PlotDATA$source, levels = unique(intestine11.up_PlotDATA$source))
+
+intestine11.up_PlotDATA$source <- recode(
+  intestine11.up_PlotDATA$source,
+  `GO:CC` = "Cellular Component",
+  `GO:BP` = "Biological Process",
+  `GO:MF` = "Molecular Function"
+)
+
+# Create and Save Plot
+intestine11.up_ORA_plot <- ggplot2::ggplot(intestine11.up_PlotDATA, ggplot2::aes(x = round(-log10(p_value),1), y = Term, group = source)) +
+  ggplot2::geom_point(ggplot2::aes(group = source, color=source), size=2) +
+  ggplot2::geom_text(ggplot2::aes(label = DEG_count), size = 2, vjust = -1) +
+  ggplot2::scale_y_discrete(limits = rev(intestine11.up_PlotDATA$Term)) +
+  ggplot2::scale_color_manual(values = c("Cellular Component" = "#00BA38",
+                                         "Biological Process" = "#F8766D",
+                                         "Molecular Function" = "#619CFF"),
+                              name = "Source") +
+  ggplot2::scale_size_continuous(name = expression(log[10]("DEG count"))) +
+  ggplot2::labs(x = expression(bold(-log[10](italic(p)))), y = "Term") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    axis.title.x = element_text(size = 12),
+    axis.text.x = element_text(size = 10),
+    axis.title.y = element_text(size = 12, angle=90, face = "bold"),
+    axis.text.y = element_text(size = 10)
+  )
+
+
+# create a common theme for all plots
+
+common_theme <- theme(
+  legend.position = "bottom",
+  legend.justification = c(1, 0), # Anchor point is bottom left
+  legend.title = ggplot2::element_blank(),
+  legend.text = element_text(size = 10),
+  legend.box = "horizontal", # Ensure the legend keys are arranged horizontally
+  panel.grid.major.x = element_line(color = "transparent"),
+  panel.grid.minor.x = element_line(color = "transparent"),
+  plot.margin = margin(t=10, r=10, b=10, l=10)
+)
+
+
+# Add the common theme adjustments to the intestine11.down_ORA_plot
+intestine11.down_ORA_plot <- intestine11.down_ORA_plot + common_theme + 
+  guides(color = guide_legend(nrow = 1)) # Ensure legend keys in one row
+
+
+# Add the common theme adjustments to the intestine11.up_ORA_plot
+intestine11.up_ORA_plot <- intestine11.up_ORA_plot + common_theme + 
+  guides(color = guide_legend(nrow = 1)) # Ensure legend keys in one row
+
+
+
+# Modify the plot A to remove the legend
+intestine11.down_ORA_plot <- intestine11.down_ORA_plot + theme(legend.position = "none")
+
+# Modify the plot B to keep the legend and move it to the bottom
+intestine11.up_ORA_plot <- intestine11.up_ORA_plot + common_theme + 
+  guides(color = guide_legend(nrow = 1)) +
+  theme(legend.position = "bottom")
+
+# Now, we'll create a legend from plot B and use it separately
+legend_b <- cowplot::get_legend(intestine11.up_ORA_plot) 
+
+# Adjust plot B to remove the legend (since we'll add it back separately)
+intestine11.up_ORA_plot <- intestine11.up_ORA_plot + theme(legend.position = "none")
+
+# Combine the plots and the legend using plot_grid
+intestine_combo <- cowplot::plot_grid(
+  cowplot::plot_grid(intestine11.down_ORA_plot, intestine11.up_ORA_plot, ncol = 2, align = "h", rel_widths = c(1, 1.058), labels = c("A)","B)")),
+  legend_b, 
+  ncol = 1, 
+  rel_heights = c(1, 0.08), # Adjust space for the legend
+  align = 'h',
+  labels = c("","")
+)
+
+# Save the combined plot with the central legend for plot B
+ggsave("figures/Fig1.tiff", intestine_combo, width = 7.5, height = 3.5, dpi = 600)
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#           Fig.2  - DEGs ORA             #
+#                                         #
+#         Table S3 - DEGs ORA             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-# Define Figure and Table Name Mappings
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Define dictionaries to map contrast names to figure and table names
-fig_name_dict <- list(
-  intestine.IVM11vsCtrl = "Fig.1",
-  intestine.IVM9vsCtrl = "Fig.2",
-  anterior.IVM9vsCtrl = "Fig.3"
+intestine9.up <- Results_DEGs_list$intestine.IVM9vsCtrl %>% 
+  dplyr::filter(log2FoldChange>0) %>% 
+  rownames(.)
+
+
+
+intestine9.up_ORA_res <- gprofiler2::gost(
+  intestine9.up, 
+  organism = "paunivprjna386823",
+  ordered_query = FALSE,
+  multi_query = FALSE,
+  significant = TRUE,
+  exclude_iea = FALSE,
+  measure_underrepresentation = FALSE,
+  evcodes = TRUE,
+  user_threshold = 0.05,
+  correction_method = "g_SCS",
+  domain_scope = "custom",
+  custom_bg = custom_bg,
+  numeric_ns = "",
+  highlight = TRUE,
+  sources = c("GO:BP", "GO:MF", "GO:CC"),
+  as_short_link = F
+)
+intestine9.up_df <- intestine9.up_ORA_res$result %>%
+  dplyr::select(source,	term_id,	highlighted, term_name,	term_size,	effective_domain_size,	p_value,	intersection_size,	intersection) %>% 
+  dplyr::rename(driver_term = highlighted)
+
+readr::write_csv(intestine9.up_df, file="data/S3 Table.csv")
+
+
+# Prepare data specifically for plotting
+intestine9.up_PlotDATA <- intestine9.up_df %>%
+  dplyr::select(source, term_name, p_value, intersection_size, driver_term) %>%
+  dplyr::rename(Term = term_name, DEG_count = intersection_size) %>% 
+  dplyr::filter(driver_term==TRUE)
+
+intestine9.up_PlotDATA$source <- factor(intestine9.up_PlotDATA$source, levels = unique(intestine9.up_PlotDATA$source))
+
+intestine9.up_PlotDATA$source <- recode(
+  intestine9.up_PlotDATA$source,
+  `GO:CC` = "Cellular Component",
+  `GO:BP` = "Biological Process",
+  `GO:MF` = "Molecular Function"
 )
 
-table_name_dict <- list(
-  intestine.IVM11vsCtrl = "Table S2",
-  intestine.IVM9vsCtrl = "Table S3",
-  anterior.IVM9vsCtrl = "Table S4"
+# Create and Save Plot
+intestine9.up_ORA_plot <- ggplot2::ggplot(intestine9.up_PlotDATA, ggplot2::aes(x = round(-log10(p_value),1), y = Term, group = source)) +
+  ggplot2::geom_point(ggplot2::aes(group = source, color=source), size=2) +
+  ggplot2::geom_text(ggplot2::aes(label = DEG_count), size = 2, vjust = -1) +
+  ggplot2::scale_y_discrete(limits = rev(intestine9.up_PlotDATA$Term)) +
+  ggplot2::scale_color_manual(values = c("Cellular Component" = "#00BA38",
+                                         "Biological Process" = "#F8766D",
+                                         "Molecular Function" = "#619CFF"),
+                              name = "Source") +
+  ggplot2::scale_size_continuous(name = expression(log[10]("DEG count"))) +
+  ggplot2::labs(x = expression(bold(-log[10](italic(p)))), y = "Term") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    axis.title.x = element_text(size = 12),
+    axis.text.x = element_text(size = 10),
+    axis.title.y = element_text(size = 12, angle=90, face = "bold"),
+    axis.text.y = element_text(size = 10)
+    
+  )
+
+
+intestine9.up_ORA_plot <- intestine9.up_ORA_plot + common_theme
+ggsave("figures/Fig2.tiff", intestine9.up_ORA_plot, width = 7, height = 3.5, dpi = 600)
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#           Fig.3  - DEGs ORA             #
+#                                         #
+#         Table S4 - DEGs ORA             #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+anterior9.up <- Results_DEGs_list$anterior.IVM9vsCtrl %>% 
+  dplyr::filter(log2FoldChange>0) %>% 
+  rownames(.)
+
+
+anterior9.up_ORA_res <- gprofiler2::gost(
+  anterior9.up, 
+  organism = "paunivprjna386823",
+  ordered_query = FALSE,
+  multi_query = FALSE,
+  significant = TRUE,
+  exclude_iea = FALSE,
+  measure_underrepresentation = FALSE,
+  evcodes = TRUE,
+  user_threshold = 0.05,
+  correction_method = "g_SCS",
+  domain_scope = "custom",
+  custom_bg = custom_bg,
+  numeric_ns = "",
+  highlight = TRUE,
+  sources = c("GO:BP", "GO:MF", "GO:CC"),
+  as_short_link = F
+)
+anterior9.up_df <- anterior9.up_ORA_res$result %>%
+  dplyr::select(source,	term_id,	highlighted, term_name,	term_size,	effective_domain_size,	p_value,	intersection_size,	intersection) %>% 
+  dplyr::rename(driver_term = highlighted)
+
+readr::write_csv(anterior9.up_df, file="data/S4 Table.csv")
+
+
+# Prepare data specifically for plotting
+anterior9.up_PlotDATA <- anterior9.up_df %>%
+  dplyr::select(source, term_name, p_value, intersection_size, driver_term) %>%
+  dplyr::rename(Term = term_name, DEG_count = intersection_size) %>% 
+  dplyr::filter(driver_term==TRUE)
+
+anterior9.up_PlotDATA$source <- factor(anterior9.up_PlotDATA$source, levels = unique(anterior9.up_PlotDATA$source))
+
+anterior9.up_PlotDATA$source <- recode(
+  anterior9.up_PlotDATA$source,
+  `GO:CC` = "Cellular Component",
+  `GO:BP` = "Biological Process",
+  `GO:MF` = "Molecular Function"
 )
 
-# Loop through each Contrast for ORA Analysis and Plotting
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-for (contrast_name in names(Results_DEGs_list)) {
-  # Skip a specific contrast
-  if (contrast_name == "anterior.IVM11vsCtrl"){
-    next
-  }
-  
-  # Extract data for the current contrast
-  current_contrast <- Results_DEGs_list[[contrast_name]]
-  current_query <- list(rownames(current_contrast))
-  
-  # Run Over-Representation Analysis (ORA) using gprofiler2
+# Create and Save Plot
+anterior9.up_ORA_plot <- ggplot2::ggplot(anterior9.up_PlotDATA, ggplot2::aes(x = round(-log10(p_value),1), y = Term, group = source)) +
+  ggplot2::geom_point(ggplot2::aes(group = source, color=source), size=2) +
+  ggplot2::geom_text(ggplot2::aes(label = DEG_count), size = 2, vjust = -1) +
+  ggplot2::scale_y_discrete(limits = rev(anterior9.up_PlotDATA$Term)) +
+  ggplot2::scale_color_manual(values = c("Cellular Component" = "#00BA38",
+                                         "Biological Process" = "#F8766D",
+                                         "Molecular Function" = "#619CFF"),
+                              name = "Source") +
+  ggplot2::scale_size_continuous(name = expression(log[10]("DEG count"))) +
+  ggplot2::labs(x = expression(bold(-log[10](italic(p)))), y = "Term") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    axis.title.x = element_text(size = 12),
+    axis.text.x = element_text(size = 10),
+    axis.title.y = element_text(size = 12, angle=90, face = "bold"),
+    axis.text.y = element_text(size = 10)
+    
+  )
 
-  current_ORA_res <- gprofiler2::gost(
-    current_query, 
-    organism = "paunivprjna386823",
-    ordered_query = FALSE,
-    multi_query = FALSE,
-    significant = TRUE,
-    exclude_iea = FALSE,
-    measure_underrepresentation = FALSE,
-    evcodes = TRUE,
-    user_threshold = 0.05,
-    correction_method = "g_SCS",
-    domain_scope = "custom",
-    custom_bg = custom_bg,
-    numeric_ns = "",
-    highlight = TRUE,
-    sources = c("GO:BP", "GO:MF", "GO:CC"),
-    as_short_link = F
-  )
-  
-  # Get the corresponding figure and table names
-  fig_name <- fig_name_dict[[contrast_name]]
-  table_name <- table_name_dict[[contrast_name]]
-  
-  # Prepare Data for CSV and Plot
-  # Extract relevant columns and write to a CSV
-  current_df <- current_ORA_res$result %>%
-    dplyr::select(source,	term_id,	highlighted, term_name,	term_size,	effective_domain_size,	p_value,	intersection_size,	intersection) %>% 
-    dplyr::rename(driver_term = highlighted)
-  
-  readr::write_csv(current_df, file=paste0("data/", table_name, ".csv"))
-  
-  
-  # Prepare data specifically for plotting
-  current_PlotDATA <- current_df %>%
-    dplyr::select(source, term_name, p_value, intersection_size, driver_term) %>%
-    dplyr::rename(Term = term_name, DEG_count = intersection_size) %>% 
-    dplyr::filter(driver_term==TRUE)
-  
-  current_PlotDATA$source <- factor(current_PlotDATA$source, levels = unique(current_PlotDATA$source))
-  
-  current_PlotDATA$source <- recode(
-    current_PlotDATA$source,
-    `GO:CC` = "Cellular Component",
-    `GO:BP` = "Biological Process",
-    `GO:MF` = "Molecular Function"
-  )
-  
-  # Create and Save Plot
-  ORA_plot <- ggplot2::ggplot(current_PlotDATA, ggplot2::aes(x = -log10(p_value), y = Term, group = source)) +
-    ggplot2::geom_point(ggplot2::aes(group = source, color=source), size=5) +
-    ggplot2::geom_text(ggplot2::aes(label = DEG_count), size = 5, vjust = -1) +
-    ggplot2::scale_y_discrete(limits = rev(current_PlotDATA$Term)) +
-    ggplot2::scale_color_manual(values = c("Cellular Component" = "#00BA38",
-                                           "Biological Process" = "#F8766D",
-                                           "Molecular Function" = "#619CFF"),
-                                name = "Source") +
-    ggplot2::scale_size_continuous(name = expression(log[10]("DEG count"))) +
-    ggplot2::labs(x = expression(-log[10](italic(p))), y = "Term") +
-    ggplot2::theme_bw() +
-    ggplot2::theme(
-      axis.title = ggplot2::element_text(size = 18), # increase axis title size
-      axis.text = ggplot2::element_text(size = 15),  # increase axis text size
-      legend.title = ggplot2::element_text(size = 18), # increase legend title size
-      legend.text = ggplot2::element_text(size = 15), # increase legend text size
-      panel.grid.major.x = ggplot2::element_line(color = "transparent"),
-      panel.grid.minor.x = ggplot2::element_line(color = "transparent")
-      
-    )
-  ggplot2::ggsave(ORA_plot, file=paste0("figures/", fig_name, ".png"), width=12.87, height=7.48)
-}
+
+anterior9.up_ORA_plot <- anterior9.up_ORA_plot + common_theme
+ggsave("figures/Fig3.tiff", anterior9.up_ORA_plot, width = 7, height = 3.5, dpi = 600)
+
 
 # Show session information for debugging and reproducibility
 sessionInfo()
-
