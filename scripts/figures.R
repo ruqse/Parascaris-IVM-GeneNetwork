@@ -378,5 +378,88 @@ anterior9.up_ORA_plot <- anterior9.up_ORA_plot + common_theme
 ggsave("figures/Fig3.tiff", anterior9.up_ORA_plot, width = 7, height = 3.5, dpi = 600)
 
 
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#           Fig.5  - DEGs ORA             #
+#                                         #
+#         Table S13 - DEGs ORA             #
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Network_custom_bg <- data.table::fread("data/Network/Metrices_ConsesusNetwork.csv") 
+
+Network_custom_bg <- Network_custom_bg$Gene
+PgR047_g066NN <- data.table::fread("data/PgR047_g066NN.csv")
+PgR047_g066NN <- PgR047_g066NN$Gene
+
+PgR047_g066NN_ORA_res <- gprofiler2::gost(
+  PgR047_g066NN, 
+  organism = "paunivprjna386823",
+  ordered_query = FALSE,
+  multi_query = FALSE,
+  significant = TRUE,
+  exclude_iea = FALSE,
+  measure_underrepresentation = FALSE,
+  evcodes = TRUE,
+  user_threshold = 0.05,
+  correction_method = "g_SCS",
+  domain_scope = "custom",
+  custom_bg = Network_custom_bg,
+  numeric_ns = "",
+  highlight = TRUE,
+  sources = c("GO:BP", "GO:MF", "GO:CC"),
+  as_short_link = F
+)
+
+PgR047_g066NN_df <- PgR047_g066NN_ORA_res$result %>%
+  dplyr::select(source,	term_id,	highlighted, term_name,	term_size,	effective_domain_size,	p_value,	intersection_size,	intersection) %>% 
+  dplyr::rename(driver_term = highlighted)
+
+readr::write_csv(PgR047_g066NN_df, file="data/S13 Table.csv")
+
+
+# Prepare data specifically for plotting
+PgR047_g066NN_PlotDATA <- PgR047_g066NN_df %>%
+  dplyr::select(source, term_name, p_value, intersection_size, driver_term) %>%
+  dplyr::rename(Term = term_name, DEG_count = intersection_size) %>% 
+  dplyr::filter(driver_term==TRUE)
+
+PgR047_g066NN_PlotDATA$source <- factor(PgR047_g066NN_PlotDATA$source, levels = unique(PgR047_g066NN_PlotDATA$source))
+
+PgR047_g066NN_PlotDATA$source <- recode(
+  PgR047_g066NN_PlotDATA$source,
+  `GO:CC` = "Cellular Component",
+  `GO:BP` = "Biological Process",
+  `GO:MF` = "Molecular Function"
+)
+
+# Create and Save Plot
+PgR047_g066NN_ORA_plot <- ggplot2::ggplot(PgR047_g066NN_PlotDATA, ggplot2::aes(x = round(-log10(p_value),1), y = Term, group = source)) +
+  ggplot2::geom_point(ggplot2::aes(group = source, color=source), size=2) +
+  ggplot2::geom_text(ggplot2::aes(label = DEG_count), size = 2, vjust = -1) +
+  ggplot2::scale_y_discrete(limits = rev(PgR047_g066NN_PlotDATA$Term)) +
+  ggplot2::scale_color_manual(values = c("Cellular Component" = "#00BA38",
+                                         "Biological Process" = "#F8766D",
+                                         "Molecular Function" = "#619CFF"),
+                              name = "Source") +
+  ggplot2::scale_size_continuous(name = expression(log[10]("DEG count"))) +
+  ggplot2::scale_x_continuous(limits = c(3, 4), breaks = seq(3, 4, by = 0.2)) +  # Setting custom x-axis scale with one decimal place
+  ggplot2::labs(x = expression(bold(-log[10](italic(p)))), y = "Term") +
+  ggplot2::theme_bw() +
+  ggplot2::theme(
+    axis.title.x = element_text(size = 12),
+    axis.text.x = element_text(size = 10),
+    axis.title.y = element_text(size = 12, angle=90, face = "bold"),
+    axis.text.y = element_text(size = 10)
+  )
+
+
+PgR047_g066NN_ORA_plot <- PgR047_g066NN_ORA_plot + common_theme
+ggsave("figures/Fig5.tiff", PgR047_g066NN_ORA_plot, width = 7, height = 3.5, dpi = 600)
+
+
+
+
+
 # Show session information for debugging and reproducibility
 sessionInfo()

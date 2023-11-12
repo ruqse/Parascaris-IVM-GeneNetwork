@@ -162,6 +162,10 @@ anterior.IVM9vsCD <- results(ddseq,
                                         filter= rowMedians(counts(ddseq,normalized=TRUE)))
 
 
+# metadata(anterior.IVM9vsCD)$filterThreshold
+
+# mcols(ddseq ,use.names=TRUE)[1:5,1:10]
+
 sum(anterior.IVM9vsCD$padj < 0.05 &
       (anterior.IVM9vsCD$log2FoldChange <= -0.5 | anterior.IVM9vsCD$log2FoldChange >= 0.5), na.rm = TRUE)
 
